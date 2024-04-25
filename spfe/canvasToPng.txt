@@ -1,0 +1,84 @@
+function exportCanvasAsPNG(id, fileName) {
+
+    var canvasElement = document.getElementById(id);
+
+    var MIME_TYPE = "image/png";
+
+    var imgURL = canvasElement.toDataURL(MIME_TYPE);
+
+    var dlLink = document.createElement('a');
+    dlLink.download = fileName;
+    dlLink.href = imgURL;
+    dlLink.dataset.downloadurl = [MIME_TYPE, dlLink.download, dlLink.href].join(':');
+
+    document.body.appendChild(dlLink);
+    dlLink.click();
+    document.body.removeChild(dlLink);
+}
+
+
+https://github.com/tsayen/dom-to-image/blob/master/dist/dom-to-image.min.js
+var node = document.getElementById('my-node');
+
+domtoimage.toPng(node)
+    .then(function (dataUrl) {
+        var img = new Image();
+        img.src = dataUrl;
+        document.body.appendChild(img);
+    })
+    .catch(function (error) {
+        console.error('oops, something went wrong!', error);
+    });
+
+
+Get a PNG image blob and download it (using FileSaver, for example):
+
+domtoimage.toBlob(document.getElementById('my-node'))
+    .then(function (blob) {
+        window.saveAs(blob, 'my-node.png');
+    });
+Save and download a compressed JPEG image:
+
+domtoimage.toJpeg(document.getElementById('my-node'), { quality: 0.95 })
+    .then(function (dataUrl) {
+        var link = document.createElement('a');
+        link.download = 'my-image-name.jpeg';
+        link.href = dataUrl;
+        link.click();
+    });
+Get an SVG data URL, but filter out all the <i> elements:
+
+function filter (node) {
+    return (node.tagName !== 'i');
+}
+
+domtoimage.toSvg(document.getElementById('my-node'), {filter: filter})
+    .then(function (dataUrl) {
+        /* do something */
+    });
+Get the raw pixel data as a Uint8Arra
+
+
+filter
+A function taking DOM node as argument. Should return true if passed node should be included in the output (excluding node means excluding it's children as well). Not called on the root node.
+
+bgcolor
+A string value for the background color, any valid CSS color value.
+
+height, width
+Height and width in pixels to be applied to node before rendering.
+
+style
+An object whose properties to be copied to node's style before rendering. You might want to check this reference for JavaScript names of CSS properties.
+
+quality
+A number between 0 and 1 indicating image quality (e.g. 0.92 => 92%) of the JPEG image. Defaults to 1.0 (100%)
+
+cacheBust
+Set to true to append the current time as a query string to URL requests to enable cache busting. Defaults to false
+
+imagePlaceholder
+A data URL for a placeholder image that will be used when fetching an image fails. Defaults to undefined and will throw an error on failed images
+
+Browsers
+
