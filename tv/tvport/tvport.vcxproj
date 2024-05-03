@@ -136,7 +136,13 @@
   <ItemGroup>
     <ClCompile Include="http-server.cpp" />
     <ClCompile Include="main.cpp" />
+    <ClCompile Include="parameters.cpp" />
     <ClCompile Include="show-screen.cpp" />
+    <ClCompile Include="slots.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="parameters.hpp" />
+    <ClInclude Include="slots.hpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

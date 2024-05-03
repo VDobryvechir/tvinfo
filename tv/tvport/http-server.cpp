@@ -1,12 +1,11 @@
 #include "webserver/client_http.hpp"
 #include "webserver/server_http.hpp"
+#include "parameters.hpp"
 
-// Added for the json-example
 #define BOOST_SPIRIT_THREADSAFE
 #include <boost/property_tree/json_parser.hpp>
 #include <boost/property_tree/ptree.hpp>
 
-// Added for the default_resource example
 #include <algorithm>
 #include <boost/filesystem.hpp>
 #include <fstream>
@@ -25,11 +24,11 @@ using HttpClient = SimpleWeb::Client<SimpleWeb::HTTP>;
 thread http_server_thread;
 
 void httpServerRun() {
-  // HTTP-server at port 8080 using 1 thread
+  // HTTP-server at port 80 using 1 thread
   // Unless you do more heavy non-threaded processing in the resources,
   // 1 thread is usually faster than several threads
   HttpServer server;
-  server.config.port = 8080;
+  server.config.port = readParameterPortNumber();
 
   // Add resources using path-regex and method-string, and an anonymous function
   // POST-example for the path /string, responds the posted string
@@ -128,7 +127,7 @@ void httpServerRun() {
   // Can for instance be used to retrieve an HTML 5 client that uses REST-resources on this server
   server.default_resource["GET"] = [](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request) {
     try {
-      auto web_root_path = boost::filesystem::canonical("web");
+      auto web_root_path = boost::filesystem::canonical("0");
       auto path = boost::filesystem::canonical(web_root_path / request->path);
       // Check if path is within web_root_path
       if(distance(web_root_path.begin(), web_root_path.end()) > distance(path.begin(), path.end()) ||
@@ -213,11 +212,13 @@ void httpServerRun() {
 
 void httpClientTest() {
   this_thread::sleep_for(chrono::seconds(1));
-
+  char clientUrlPath[40];
+  int portNumber = readParameterPortNumber();
+  sprintf(clientUrlPath, "localhost:%d", portNumber);
   // Client examples
-  HttpClient client("localhost:8080");
+  HttpClient client(clientUrlPath);
 
-  string json_string = "{\"firstName\": \"John\",\"lastName\": \"Smith\",\"age\": 25}";
+  string json_string = "{\"firstName\": \"Http Self-Test\",\"lastName\": \"Passed\",\"age\": 25}";
 
   // Synchronous request examples
   try {

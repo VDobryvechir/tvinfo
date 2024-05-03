@@ -1,7 +1,12 @@
 #include "http-server.hpp"
 #include "show-screen.hpp"
+#include <thread>
+
+using namespace std;
 
 int main() {
-   showScreen();
-   // httpServerTest();
+    thread video_thread(showScreen);
+   // showScreen();
+    httpServerTest();
+    video_thread.join();
 }
