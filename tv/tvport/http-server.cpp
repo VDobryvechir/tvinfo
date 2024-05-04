@@ -1,6 +1,7 @@
 #include "webserver/client_http.hpp"
 #include "webserver/server_http.hpp"
 #include "parameters.hpp"
+#include "slots.hpp"
 
 #define BOOST_SPIRIT_THREADSAFE
 #include <boost/property_tree/json_parser.hpp>
@@ -48,43 +49,21 @@ void httpServerRun() {
     // response->write(content);
   };
 
-  // POST-example for the path /json, responds firstName+" "+lastName from the posted json
-  // Responds with an appropriate error message if the posted json is not valid, or if firstName or lastName is missing
-  // Example posted json:
-  // {
-  //   "firstName": "John",
-  //   "lastName": "Smith",
-  //   "age": 25
-  // }
-  server.resource["^/json$"]["POST"] = [](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request) {
+  server.resource["^/config$"]["POST"] = [](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request) {
     try {
-      ptree pt;
-      read_json(request->content, pt);
-
-      auto name = pt.get<string>("firstName") + " " + pt.get<string>("lastName");
+        string conf = request->content.string();
+        string resp = tvPortSlots.uploadConfig(conf);
 
       *response << "HTTP/1.1 200 OK\r\n"
-                << "Content-Length: " << name.length() << "\r\n\r\n"
-                << name;
+                << "Content-Length: " << resp.length() << "\r\n\r\n"
+                << resp;
     }
     catch(const exception &e) {
       *response << "HTTP/1.1 400 Bad Request\r\nContent-Length: " << strlen(e.what()) << "\r\n\r\n"
                 << e.what();
     }
-
-
-    // Alternatively, using a convenience function:
-    // try {
-    //     ptree pt;
-    //     read_json(request->content, pt);
-
-    //     auto name=pt.get<string>("firstName")+" "+pt.get<string>("lastName");
-    //     response->write(name);
-    // }
-    // catch(const exception &e) {
-    //     response->write(SimpleWeb::StatusCode::client_error_bad_request, e.what());
-    // }
   };
+
 
   // GET-example for the path /info
   // Responds with request-information
@@ -106,10 +85,14 @@ void httpServerRun() {
     response->write(stream);
   };
 
-  // GET-example for the path /match/[number], responds with the matched string in path (number)
-  // For instance a request GET /match/123 will receive: 123
-  server.resource["^/match/([0-9]+)$"]["GET"] = [](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request) {
-    response->write(request->path_match[1]);
+  server.resource["^/upload/([0-9,_]+)$"]["POST"] = [](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request) {
+      string nr = request->path_match[1];
+      int amount = request->streambuf.size();
+      std::unique_ptr<char[]> buffer(new char[amount]);
+      char* data = buffer.get();
+      request->content.read(data, static_cast<std::streamsize>(amount));
+      string res = tvPortSlots.uploadFile(nr, amount, data);
+      response->write(res);
   };
 
   // GET-example simulating heavy work in a separate thread
@@ -215,30 +198,20 @@ void httpClientTest() {
   char clientUrlPath[40];
   int portNumber = readParameterPortNumber();
   sprintf(clientUrlPath, "localhost:%d", portNumber);
-  // Client examples
+  // Client 
   HttpClient client(clientUrlPath);
 
-  string json_string = "{\"firstName\": \"Http Self-Test\",\"lastName\": \"Passed\",\"age\": 25}";
+  string json_string = "{\"Http Self-Test Passed\"}";
 
-  // Synchronous request examples
+  // Synchronous request 
   try {
-    auto r1 = client.request("GET", "/match/123");
-    cout << r1->content.rdbuf() << endl; // Alternatively, use the convenience function r1->content.string()
-
     auto r2 = client.request("POST", "/string", json_string);
     cout << r2->content.rdbuf() << endl;
   }
   catch(const SimpleWeb::system_error &e) {
     cerr << "Client request error: " << e.what() << endl;
   }
-
-  // Asynchronous request example
-  client.request("POST", "/json", json_string, [](shared_ptr<HttpClient::Response> response, const SimpleWeb::error_code &ec) {
-    if(!ec)
-      cout << response->content.rdbuf() << endl;
-  });
-  client.io_service->run();
-
+ 
 }
 
 

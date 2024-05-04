@@ -54,7 +54,6 @@ class TvPortSlot
 	const string configFilePath = "config.json";
 public:
 	int slotNumber;
-	int screenNumber=0;
 	bool isReady = false, isCorrupted=false;
 	string pathPrefix;
 	string reason;
@@ -71,6 +70,31 @@ public:
 			filesystem::create_directory(pathPrefix);
 		}
 		pathPrefix += "/";
+	}
+
+    int getScreenNumber() 
+    {
+              return isCorrupted || !isReady ? 0 : file.size();
+    }
+
+	string	getSlotFileName(int screen)
+	{
+		return screen < file.size() ? pathPrefix + file.at(screen) : "";
+	}
+
+	int getSlotDuration(int screen)
+	{
+		int res = screen < duration.size() ? duration.at(screen) : 0;
+		if (res<=0) 
+		{
+			res = 3;
+		}
+		return res;
+	}
+
+	bool isSlotVideo(int screen)
+	{
+		return screen < file.size() && file.at(screen).size()>0 && file.at(screen).at(0) == 'v';
 	}
 
 	bool readConfigFile(string path)
@@ -302,21 +326,35 @@ public:
 			}
 		}
 		else {
-
+			for (const auto& entry : filesystem::directory_iterator(pathPrefix))
+			{
+				if (entry.is_regular_file())
+				{
+					filesystem::path p = entry.path();
+					string s = p.filename().string();
+					if (s == configFilePath || find(file.begin(), file.end(), s) != file.end())
+					{
+						continue;
+					}
+					filesystem::remove_all(p);
+				}
+			}
 		}
-		// TODO
 	}
 };
 
 class TvPortSlots
 {
-	int currentSlot;
+	volatile int currentSlot;
 	TvPortSlot *current = nullptr;
 	TvPortSlot *next = nullptr;
 public:
 	TvPortSlots()
 	{
 		currentSlot = readParameterSlot();
+	}
+	int loadInitialSlot() 
+    {
 		current = readSlot(currentSlot);
 		if (!current->isReady || current->isCorrupted)
 		{
@@ -325,11 +363,99 @@ public:
 			delete current;
 			current = readSlot(currentSlot);
 		}
+        return currentSlot;            
+    }
+
+    int getCurrentSlotScreens() 
+    {
+		return current == nullptr ? 0 : current->getScreenNumber();
+    }
+
+	bool isRequiredToSwitch(int slot) {
+		return slot != currentSlot;
+	}
+
+	string getCurrentSlotFileName(int screen) 
+	{
+		return current == nullptr ? "" : current->getSlotFileName(screen);
+	}
+
+	int getCurrentSlotDuration(int screen)
+	{
+		return current == nullptr ? 3 : current->getSlotDuration(screen);
+	}
+
+	bool isCurrentSlotVideo(int screen) 
+	{
+		return current == nullptr ? false : current->isSlotVideo(screen);
+	}
+
+	int switchToCurrentTask()
+	{
+		TvPortSlot* old = current;
+		if (next != nullptr && next->isReady && !next->isCorrupted) {
+			// TODO make multithread protection
+			current = next;
+			next = nullptr;
+		} 
+		else {
+			old = nullptr;
+		}
+		if (old!=nullptr) 
+		{
+			if (old->isCorrupted)
+			{
+				old->cleanUnnecessaryFiles(true);
+			}
+			delete old;
+		}
+		if (current!=nullptr) {
+			currentSlot = current->slotNumber;
+		}
+		return currentSlot;
+	}
+
+	string uploadFile(string nr, int storrelse, char* data) {
+		if (next != nullptr)
+		{
+			string res = next->uploadFile(nr, storrelse, data);
+			checkSlotReadiness();
+			return res;
+		}
+		return "Error: No next config";
+	}
+	string uploadConfig(string configData)
+	{
+		if (next != nullptr)
+		{
+			// TODO make multithread safe
+			if (current == nullptr)
+			{
+				current = next;
+			} 
+			else {
+				delete next;
+			}
+			currentSlot = current->slotNumber;
+			next = nullptr;
+		}
+		int slot = getNextSlotNumber();
+		next = new TvPortSlot(slot);
+		string res = next->uploadConfig(configData);
+		checkSlotReadiness();
+		return res;
+	}
+protected:
+	TvPortSlot *readSlot(int slot)
+	{
+		TvPortSlot *portSlot = new TvPortSlot(slot);
+		portSlot->readSlot();
+		return portSlot;
 	}
 
 	int getNextSlotNumber()
 	{
-		int slot = currentSlot + 1;
+		int slot = current == nullptr ? 1 : current->slotNumber + 1;
 		if (slot > TVPORT_MAXIMUM_SLOT_NUMBER)
 		{
 			slot = TVPORT_MINIMUM_SLOT_NUMBER;
@@ -337,24 +463,15 @@ public:
 		return slot;
 	}
 
-	void goToNextSlot()
+	void checkSlotReadiness()
 	{
-		currentSlot = getNextSlotNumber();
-	}
-
-protected:
-	TvPortSlot *readSlot(int slot)
-	{
-
-	}
-	void readNextSlot()
-	{
-		readSlot(getNextSlotNumber());
-	}
-	void readCurrentSlot()
-	{
-		readSlot(currentSlot);
+		if (next != nullptr && next->isReady && !next->isCorrupted)
+		{
+			next->cleanUnnecessaryFiles(false);
+			currentSlot = next->slotNumber;
+			writeParameterSlot(currentSlot);
+		}
 	}
 };
-
+extern TvPortSlots tvPortSlots;
 #endif
