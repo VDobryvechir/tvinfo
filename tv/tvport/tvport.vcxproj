@@ -142,6 +142,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="parameters.hpp" />
+    <ClInclude Include="show-screen.hpp" />
     <ClInclude Include="slots.hpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
