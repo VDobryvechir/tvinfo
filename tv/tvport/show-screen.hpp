@@ -2,10 +2,12 @@
 #define TVPORT_SHOW_SCREEN_HPP
 
 #include "slots.hpp"
+#include "window-related.hpp"
 #include "opencv2/core.hpp"
 #include "opencv2/imgcodecs.hpp"
 #include "opencv2/highgui.hpp"
 #include "opencv2/highgui/highgui_c.h"
+#include <opencv2/opencv.hpp>
 #include <iostream>
 #include <vector>
 #include <wtypes.h>
@@ -15,9 +17,9 @@
 // PICTURE_FRAME_FREQUENCY = 1000 / PICTURE_FRAME_DURATION
 #define PICTURE_FRAME_FREQUENCY 10
 // in ms, this constant defines our reaction to new events
-#define VIDEO_FRAME_DURATION 20
+#define VIDEO_FRAME_DURATION 8
 // VIDEO_FRAME_FREQUENCY = 1000 / VIDEO_FRAME_DURATION
-#define VIDEO_FRAME_FREQUENCY 50
+#define VIDEO_FRAME_FREQUENCY 125
 // in ms, this constant defines our reaction to new events
 #define VIDEO_ERROR_LIMIT 50
 #define VIDEO_ERROR_TOTAL_LIMIT 5000
@@ -74,6 +76,27 @@ protected:
     setWindowProperty(windowName, WND_PROP_FULLSCREEN, WINDOW_FULLSCREEN);
     setFullScreenMode(windowName);
   }
+
+  float calculateScaleToResize(int width, int height) {
+      if (height == 0 || width == 0) {
+          return 0.0;
+      }
+      int horizontal, vertical;
+      getDesktopResolution(horizontal, vertical);
+      float riseVertical = ((float)vertical) / ((float)height);
+      float riseHorizontal = ((float)horizontal) / ((float)width);
+      if (width >= horizontal) {
+          if (height >= vertical) {
+              return 0.0;
+          }
+          return riseVertical;
+      }
+      if (height >= vertical) {
+          return riseHorizontal;
+      }
+      return riseHorizontal > riseVertical ? riseHorizontal : riseVertical;
+  }
+
   void taskShowPicture(string imagePath, int duration) 
   {
     duration *= PICTURE_FRAME_FREQUENCY;
@@ -85,8 +108,16 @@ protected:
         this_thread::sleep_for(200ms);
         return;
     }
+    float resizeFactor = calculateScaleToResize(img.size().width, img.size().height);
+    if (resizeFactor >= 1) {
+        Mat dst;
+        resize(img, dst, Size(), resizeFactor, resizeFactor, INTER_CUBIC);
+        imshow(windowName, dst);
+    }
+    else {
+        imshow(windowName, img);
+    }
 
-    imshow(windowName, img);
     for(int i=0;i<duration;i++)
     {
         int k = waitKey(PICTURE_FRAME_DURATION);
@@ -104,9 +135,11 @@ protected:
 
   void taskShowVideo(string fileName) 
   {
+      std::cout << " Video " << fileName << "\n";
       VideoCapture video(fileName);
       Mat frame;
       int errors = 0, totalErrors = 0;
+      std::cout << " was opened " << fileName << "\n";
       while (video.isOpened())
       {
           try {
@@ -126,7 +159,15 @@ protected:
                   break;
               }
           }
-          imshow(windowName, frame);
+          float resizeFactor = calculateScaleToResize(frame.size().width, frame.size().height);
+          if (resizeFactor >= 1) {
+              Mat dst;
+              resize(frame, dst, Size(), resizeFactor, resizeFactor, INTER_CUBIC);
+              imshow(windowName, dst);
+          }
+          else {
+              imshow(windowName, frame);
+          }
           int k = waitKey(VIDEO_FRAME_DURATION);
           if (k == SCREEN_ESCAPE_KEY)
           {

@@ -30,6 +30,9 @@
     <ClCompile Include="slots.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="window-related.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="parameters.hpp">
@@ -39,6 +42,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="show-screen.hpp">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="window-related.hpp">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

@@ -21,9 +21,11 @@ int readIntegerFromBuffer(char* buffer)
 
 int readParameterInteger(char *fileName, int defValue)
 {
-    FILE* fp = fopen(fileName, "r");
+    FILE* fp;
+    errno_t err;
+    err = fopen_s(&fp, fileName, "r");
 
-    if (fp == NULL)
+    if (err!=0 || fp == NULL)
     {
         return defValue;
     }
@@ -50,9 +52,10 @@ int readParameterInteger(char *fileName, int defValue)
 
 void writeParameterInteger(char* fileName, int value)
 {
-    FILE* fp = fopen(fileName, "w");
+    FILE* fp;
+    errno_t err = fopen_s(&fp, fileName, "w");
 
-    if (fp == NULL)
+    if (err!=0 || fp == NULL)
     {
         cout << "Cannot write to " << fileName << endl;
         return;
@@ -61,7 +64,7 @@ void writeParameterInteger(char* fileName, int value)
     // reading line by line, max 20 bytes
     const unsigned MAX_LENGTH = 20;
     char buffer[MAX_LENGTH];
-    sprintf(buffer, "%d\n", value);
+    sprintf_s(buffer, "%d\n", value);
     fputs(buffer, fp);
     // close the file
     fclose(fp);

@@ -41,31 +41,50 @@ TvPortSlots manages the current slot for the show and next slot for uploading in
 
 #include "parameters.hpp"
 
-using namespace std;
+namespace filesystem = std::filesystem;
 namespace json = boost::json;
 
 struct TvPortConfiguration {
-	vector<string> file;
-	vector<int> duration;
+	std::vector<std::string> file;
+	std::vector<int> duration;
+
+	friend TvPortConfiguration tag_invoke(json::value_to_tag<TvPortConfiguration>, json::value const& v) {
+		auto& o = v.as_object();
+		return {
+			json::value_to<std::vector<std::string>>(o.at("file")),
+			json::value_to<std::vector<int>>(o.at("duration")),
+		};
+	}
+
+	friend void tag_invoke(json::value_from_tag, json::value& v, TvPortConfiguration const& rec)
+	{
+		auto file = json::value_from(rec.file);
+		auto duration = json::value_from( rec.duration );
+
+		v = json::object{
+			{"file", file},
+			{"duration", duration},
+		};
+	}
 };
 
 class TvPortSlot
 {
-	const string configFilePath = "config.json";
+	const std::string configFilePath = "config.json";
 public:
 	int slotNumber;
 	bool isReady = false, isCorrupted=false;
-	string pathPrefix;
-	string reason;
+	std::string pathPrefix;
+	std::string reason;
 
-	vector<string> file;
-	vector<int> duration;
-	map<string, int> problems;
+	std::vector<std::string> file;
+	std::vector<int> duration;
+	std::map<std::string, int> problems;
 
 	TvPortSlot(int slot)
 	{
 		slotNumber = slot;
-		pathPrefix = to_string(slot);
+		pathPrefix = std::to_string(slot);
 		if (!filesystem::exists(pathPrefix)) {
 			filesystem::create_directory(pathPrefix);
 		}
@@ -74,10 +93,10 @@ public:
 
     int getScreenNumber() 
     {
-              return isCorrupted || !isReady ? 0 : file.size();
+              return isCorrupted || !isReady ? 0 : (int) file.size();
     }
 
-	string	getSlotFileName(int screen)
+	std::string	getSlotFileName(int screen)
 	{
 		return screen < file.size() ? pathPrefix + file.at(screen) : "";
 	}
@@ -92,26 +111,41 @@ public:
 		return res;
 	}
 
-	bool isSlotVideo(int screen)
-	{
-		return screen < file.size() && file.at(screen).size()>0 && file.at(screen).at(0) == 'v';
+	bool filePathContainVideo(std::string name) {
+		if (name.size() == 0) {
+			return false;
+		}
+		size_t found = name.find_last_of('/');
+		if (found == std::string::npos) {
+			return name.at(0) == 'v';
+		}
+		if (found + 1 >= name.size()) {
+			return false;
+		}
+		return name.at(found + 1) == 'v';
 	}
 
-	bool readConfigFile(string path)
+	bool isSlotVideo(int screen)
 	{
-		ifstream ifs(path);
-		string input(istreambuf_iterator<char>(ifs), {});
+		return screen < file.size() && filePathContainVideo(file.at(screen));
+	}
+
+	bool readConfigFile(std::string path)
+	{
+		std::ifstream ifs(path);
+		std::string input(std::istreambuf_iterator<char>(ifs), {});
 
 		TvPortConfiguration conf = json::value_to<TvPortConfiguration>(json::parse(input));
 		file = conf.file;
 		duration = conf.duration;
+		return !conf.file.empty();
 	}
 
 	bool readSlot()
 	{
 		isCorrupted = false;
 		isReady = false;
-		string configName = pathPrefix + configFilePath;
+		std::string configName = pathPrefix + configFilePath;
 		if (!filesystem::exists(configName))
 		{
 			isCorrupted = true;
@@ -130,7 +164,7 @@ public:
 	bool verifySlot()
 	{
 		isReady = false;
-		int n = file.size();
+		int n = (int) file.size();
 		if (n == 0 || duration.size() != n)
 		{
 			isCorrupted = true;
@@ -142,19 +176,19 @@ public:
 		for (int i = 0; i < n; i++)
 		{
 			int varighet = duration.at(i);
-			string fil = file.at(i);
+			std::string fil = file.at(i);
 			if (fil.size() < 4 || (fil.at(0) != 'v' && fil.at(0) != 'i'))
 			{
 				isCorrupted = true;
 				isReady = false;
-				reason = "Incorrect file name start at " + to_string(i) + " of " + fil;
+				reason = "Incorrect file name start at " + std::to_string(i) + " of " + fil;
 				return false;
 			}
 			if (varighet <= 0 && fil.at(0) == 'i')
 			{
 				isCorrupted = true;
 				isReady = false;
-				reason = "Incorrect duration at " + to_string(i) + " of " + to_string(varighet);
+				reason = "Incorrect duration at " + std::to_string(i) + " of " + std::to_string(varighet);
 				return false;
 			}
 			long sizeExpected = getExpectedFileSize(i);
@@ -162,7 +196,7 @@ public:
 			{
 				return false;
 			}
-			string filName = pathPrefix + fil;
+			std::string filName = pathPrefix + fil;
 			if (!filesystem::exists(filName))
 			{
 				isReady = false;
@@ -180,9 +214,9 @@ public:
 		return isReady;
 	}
 
-	string uploadConfig(string configData)
+	std::string uploadConfig(std::string configData)
 	{
-		ofstream conf(pathPrefix + configFilePath);
+		std::ofstream conf(pathPrefix + configFilePath);
 		if (conf.is_open()) {
 			conf << configData;
 			conf.close();
@@ -194,9 +228,9 @@ public:
 		return getCommonStatus();
 	}
 
-	string getCommonStatus() 
+	std::string getCommonStatus() 
 	{
-		stringstream ss;
+		std::stringstream ss;
 		if (isCorrupted)
 		{
 			ss << "{\"Error: " << reason << "\":0}";
@@ -220,19 +254,19 @@ public:
 
 	long getExpectedFileSize(int pos)
 	{
-		string fil = file.at(pos);
+		std::string fil = file.at(pos);
 		size_t minusPos = fil.find('-');
 		size_t pointPos = fil.find('.');
-		if (minusPos == string::npos || pointPos == string::npos || minusPos + 1 >= pointPos)
+		if (minusPos == std::string::npos || pointPos == std::string::npos || minusPos + 1 >= pointPos)
 		{
 			isCorrupted = true;
 			isReady = false;
-			reason = "Incorrect name structure with regard to minus or point in " + to_string(pos) + " of " + fil;
+			reason = "Incorrect name structure with regard to minus or point in " + std::to_string(pos) + " of " + fil;
 			return -1;
 		}
-		string sizeStr = fil.substr(minusPos + 1, pointPos - minusPos - 1);
+		std::string sizeStr = fil.substr(minusPos + 1, pointPos - minusPos - 1);
 		long sizeExpected;
-		if (sscanf(sizeStr.c_str(), "%ld", &sizeExpected) != 1 || sizeExpected <= 0)
+		if (sscanf_s(sizeStr.c_str(), "%ld", &sizeExpected) != 1 || sizeExpected <= 0)
 		{
 			isCorrupted = true;
 			isReady = false;
@@ -242,9 +276,9 @@ public:
 		return sizeExpected;
 	}
 
-	string saveSlotFile(int fileNo, long filePos, int storrelse, char* data)
+	std::string saveSlotFile(int fileNo, long filePos, int storrelse, char* data)
 	{
-		string fileName = pathPrefix + file.at(fileNo);
+		std::string fileName = pathPrefix + file.at(fileNo);
 		if (filePos == 0)
 		{
 			std::ofstream fs(fileName, std::ios::out | std::ios::binary | std::ios::app);
@@ -254,12 +288,12 @@ public:
 		else {
 			if (!filesystem::exists(fileName))
 			{
-				return "File " + fileName + " does not exist, so it cannot be written at this position " + to_string(filePos);
+				return "File " + fileName + " does not exist, so it cannot be written at this position " + std::to_string(filePos);
 			}
 			uintmax_t fileSize = filesystem::file_size(fileName);
 			if (fileSize < filePos)
 			{
-				return "File " + fileName + " is too small " + to_string(fileSize) + " so it cannot be saved at position " + to_string(filePos);
+				return "File " + fileName + " is too small " + std::to_string(fileSize) + " so it cannot be saved at position " + std::to_string(filePos);
 			}
 			std::fstream fs(fileName, std::ios::binary | std::ios::out | std::ios::in);
 			fs.seekp(filePos, std::ios::beg); // Move the write pointer to position 
@@ -270,34 +304,34 @@ public:
 	}
 
 	// nr must be of this format X_XXXXXX, where X is the file number in the slot, XXXXXX is the current position in the file
-	string uploadFile(string nr, int storrelse, char* data) {
+	std::string uploadFile(std::string nr, int uploadedSize, char* data) {
 		size_t underPos = nr.find("_");
-		if (underPos == string::npos || underPos < 1)
+		if (underPos == std::string::npos || underPos < 1)
 		{
 			return "Incorrect number parameter";
 		}
-		string firstNmb = nr.substr(0, underPos);
-		string secondNmb = nr.substr(underPos + 1);
+		std::string firstNmb = nr.substr(0, underPos);
+		std::string secondNmb = nr.substr(underPos + 1);
 		int fileNo;
 		long filePos;
-		if (sscanf(firstNmb.c_str(), "%d", &fileNo) != 1 || fileNo < 0 || fileNo >= file.size())
+		if (sscanf_s(firstNmb.c_str(), "%d", &fileNo) != 1 || fileNo < 0 || fileNo >= file.size())
 		{
-			return "Error in the file no  with limit of " + to_string(file.size());
+			return "Error in the file no  with limit of " + std::to_string(file.size());
 		}
-		if (sscanf(secondNmb.c_str(), "%ld", &filePos) != 1 || filePos < 0 || storrelse<=0)
+		if (sscanf_s(secondNmb.c_str(), "%ld", &filePos) != 1 || filePos < 0 || uploadedSize<=0)
 		{
 			return "Error in the file position of " + secondNmb;
 		}
 		long expectedSize = getExpectedFileSize(fileNo);
 		if (expectedSize <= 0)
 		{
-			return "Corrupted expected size " + to_string(expectedSize);
+			return "Corrupted expected size " + std::to_string(expectedSize);
 		}
-		if (expectedSize < filePos + storrelse)
+		if (expectedSize < filePos + uploadedSize)
 		{
-			return "Exceeded expected file size " + to_string(expectedSize) + " while filePos= " + to_string(filePos) + " size=" + to_string(size);
+			return "Exceeded expected file size " + std::to_string(expectedSize) + " while filePos= " + std::to_string(filePos) + " size=" + std::to_string(uploadedSize);
 		}
-		string message = saveSlotFile(fileNo, filePos, storrelse, data);
+		std::string message = saveSlotFile(fileNo, filePos, uploadedSize, data);
 		if (message.size() > 0)
 		{
 			return message;
@@ -331,7 +365,7 @@ public:
 				if (entry.is_regular_file())
 				{
 					filesystem::path p = entry.path();
-					string s = p.filename().string();
+					std::string s = p.filename().string();
 					if (s == configFilePath || find(file.begin(), file.end(), s) != file.end())
 					{
 						continue;
@@ -375,7 +409,7 @@ public:
 		return slot != currentSlot;
 	}
 
-	string getCurrentSlotFileName(int screen) 
+	std::string getCurrentSlotFileName(int screen) 
 	{
 		return current == nullptr ? "" : current->getSlotFileName(screen);
 	}
@@ -415,16 +449,16 @@ public:
 		return currentSlot;
 	}
 
-	string uploadFile(string nr, int storrelse, char* data) {
+	std::string uploadFile(std::string nr, int storrelse, char* data) {
 		if (next != nullptr)
 		{
-			string res = next->uploadFile(nr, storrelse, data);
+			std::string res = next->uploadFile(nr, storrelse, data);
 			checkSlotReadiness();
 			return res;
 		}
 		return "Error: No next config";
 	}
-	string uploadConfig(string configData)
+	std::string uploadConfig(std::string configData)
 	{
 		if (next != nullptr)
 		{
@@ -441,7 +475,7 @@ public:
 		}
 		int slot = getNextSlotNumber();
 		next = new TvPortSlot(slot);
-		string res = next->uploadConfig(configData);
+		std::string res = next->uploadConfig(configData);
 		checkSlotReadiness();
 		return res;
 	}

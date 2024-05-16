@@ -139,11 +139,13 @@
     <ClCompile Include="parameters.cpp" />
     <ClCompile Include="show-screen.cpp" />
     <ClCompile Include="slots.cpp" />
+    <ClCompile Include="window-related.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="parameters.hpp" />
     <ClInclude Include="show-screen.hpp" />
     <ClInclude Include="slots.hpp" />
+    <ClInclude Include="window-related.hpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

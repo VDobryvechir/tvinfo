@@ -85,9 +85,9 @@ void httpServerRun() {
     response->write(stream);
   };
 
-  server.resource["^/upload/([0-9,_]+)$"]["POST"] = [](shared_ptr<HttpServer::Response> response, shared_ptr<HttpServer::Request> request) {
+  server.resource["^/upload/([0-9,_]+)$"]["POST"] = [](std::shared_ptr<HttpServer::Response> response, std::shared_ptr<HttpServer::Request> request) {
       string nr = request->path_match[1];
-      int amount = request->streambuf.size();
+      int amount = (int) request->content.gcount();
       std::unique_ptr<char[]> buffer(new char[amount]);
       char* data = buffer.get();
       request->content.read(data, static_cast<std::streamsize>(amount));
@@ -197,7 +197,7 @@ void httpClientTest() {
   this_thread::sleep_for(chrono::seconds(1));
   char clientUrlPath[40];
   int portNumber = readParameterPortNumber();
-  sprintf(clientUrlPath, "localhost:%d", portNumber);
+  sprintf_s(clientUrlPath, "localhost:%d", portNumber);
   // Client 
   HttpClient client(clientUrlPath);
 
