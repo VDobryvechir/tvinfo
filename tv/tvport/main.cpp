@@ -4,6 +4,6 @@
 
 int main() {
     std::thread video_thread(showScreen);
-    httpServerTest();
+    HttpServerInstance::runWithSelfTest();
     video_thread.join();
 }

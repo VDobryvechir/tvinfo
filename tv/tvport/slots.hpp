@@ -73,7 +73,7 @@ class TvPortSlot
 	const std::string configFilePath = "config.json";
 public:
 	int slotNumber;
-	bool isReady = false, isCorrupted=false;
+	bool isReady = false, isCorrupted=false, readyToSwitch=false;
 	std::string pathPrefix;
 	std::string reason;
 
@@ -382,10 +382,11 @@ class TvPortSlots
 	volatile int currentSlot;
 	TvPortSlot *current = nullptr;
 	TvPortSlot *next = nullptr;
+	std::mutex switchToNextMutex;
 public:
 	TvPortSlots()
 	{
-		currentSlot = readParameterSlot();
+		currentSlot = ParamUtils::readParameterSlot();
 	}
 	int loadInitialSlot() 
     {
@@ -426,15 +427,14 @@ public:
 
 	int switchToCurrentTask()
 	{
-		TvPortSlot* old = current;
-		if (next != nullptr && next->isReady && !next->isCorrupted) {
-			// TODO make multithread protection
+		TvPortSlot* old = nullptr;
+		switchToNextMutex.lock();
+		if (next != nullptr && next->readyToSwitch) {
+			old = current;
 			current = next;
 			next = nullptr;
-		} 
-		else {
-			old = nullptr;
 		}
+		switchToNextMutex.unlock();
 		if (old!=nullptr) 
 		{
 			if (old->isCorrupted)
@@ -458,20 +458,26 @@ public:
 		}
 		return "Error: No next config";
 	}
+
 	std::string uploadConfig(std::string configData)
 	{
+		TvPortSlot* old = nullptr;
+	    switchToNextMutex.lock();
 		if (next != nullptr)
 		{
-			// TODO make multithread safe
 			if (current == nullptr)
 			{
 				current = next;
 			} 
 			else {
-				delete next;
+				old = next;
 			}
 			currentSlot = current->slotNumber;
 			next = nullptr;
+		}
+		switchToNextMutex.unlock();
+		if (old != nullptr) {
+			delete old;
 		}
 		int slot = getNextSlotNumber();
 		next = new TvPortSlot(slot);
@@ -503,7 +509,8 @@ protected:
 		{
 			next->cleanUnnecessaryFiles(false);
 			currentSlot = next->slotNumber;
-			writeParameterSlot(currentSlot);
+			ParamUtils::writeParameterSlot(currentSlot);
+			next->readyToSwitch = true;
 		}
 	}
 };

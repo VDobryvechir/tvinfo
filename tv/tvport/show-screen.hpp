@@ -10,7 +10,6 @@
 #include <opencv2/opencv.hpp>
 #include <iostream>
 #include <vector>
-#include <wtypes.h>
 
 // in ms, this constant defines our reaction to new events
 #define PICTURE_FRAME_DURATION 100
@@ -28,6 +27,10 @@
 #define IDLE_FRAME_AMOUNT 4
 #define SCREEN_ESCAPE_KEY 27
 
+#define VIDEO_RESIZE_UNKNOWN 0
+#define VIDEO_RESIZE_REQUIRED 1
+#define VIDEO_RESIZE_NON_REQUIRED 2
+
 using namespace std;
 using namespace cv;
 
@@ -42,39 +45,13 @@ protected:
   int currentScreenNumber = 0, totalScreenNumber=0;
   bool screenRunning = true;
   
-  wchar_t* convertCharArrayToLPCWSTR(const char* charArray)
-  {
-    wchar_t* wString = new wchar_t[4096];
-    MultiByteToWideChar(CP_ACP, 0, charArray, -1, wString, 4096);
-    return wString;
-  }
-
-  void setFullScreenMode(String winName) 
-  {
-    const char* m_szWinName = winName.c_str();
-
-    HWND m_hMediaWindow = (HWND)cvGetWindowHandle(m_szWinName);
-
-    // change style of the child HighGui window
-    DWORD style = ::GetWindowLong(m_hMediaWindow, GWL_STYLE);
-    style &= ~WS_OVERLAPPEDWINDOW;
-    style |= WS_POPUP;
-    ::SetWindowLong(m_hMediaWindow, GWL_STYLE, style);
-
-    // change style of the parent HighGui window
-    LPCWSTR lpcName = convertCharArrayToLPCWSTR(m_szWinName);
-    HWND hParent = ::FindWindow(0, lpcName);
-    style = ::GetWindowLong(hParent, GWL_STYLE);
-    style &= ~WS_OVERLAPPEDWINDOW;
-    style |= WS_POPUP;
-    ::SetWindowLong(hParent, GWL_STYLE, style);
-  }
+  
 
   void setupScreen() 
   {
     namedWindow(windowName, cv::WINDOW_FULLSCREEN); // Create a window
     setWindowProperty(windowName, WND_PROP_FULLSCREEN, WINDOW_FULLSCREEN);
-    setFullScreenMode(windowName);
+    WindowRelatedUtils::setFullScreenMode(windowName);
   }
 
   float calculateScaleToResize(int width, int height) {
@@ -82,7 +59,7 @@ protected:
           return 0.0;
       }
       int horizontal, vertical;
-      getDesktopResolution(horizontal, vertical);
+      WindowRelatedUtils::getDesktopResolution(horizontal, vertical);
       float riseVertical = ((float)vertical) / ((float)height);
       float riseHorizontal = ((float)horizontal) / ((float)width);
       if (width >= horizontal) {
@@ -135,11 +112,12 @@ protected:
 
   void taskShowVideo(string fileName) 
   {
-      std::cout << " Video " << fileName << "\n";
       VideoCapture video(fileName);
       Mat frame;
       int errors = 0, totalErrors = 0;
-      std::cout << " was opened " << fileName << "\n";
+      int videoResize = VIDEO_RESIZE_UNKNOWN;
+      float resizeFactor = 0;
+
       while (video.isOpened())
       {
           try {
@@ -155,12 +133,22 @@ protected:
               totalErrors++;
               if (errors >= VIDEO_ERROR_LIMIT || totalErrors>=VIDEO_ERROR_TOTAL_LIMIT)
               {
-                  cout << fileName << " Video is broken or has unsupported format" << endl;
+                  std::cout << fileName << " Video is broken or has unsupported format" << std::endl;
                   break;
               }
           }
-          float resizeFactor = calculateScaleToResize(frame.size().width, frame.size().height);
-          if (resizeFactor >= 1) {
+          if (videoResize == VIDEO_RESIZE_UNKNOWN)
+          {
+              resizeFactor = calculateScaleToResize(frame.size().width, frame.size().height);
+              if (resizeFactor >= 1) {
+                  videoResize = VIDEO_RESIZE_REQUIRED;
+                  std::cout << "Resizing video " << fileName << " (" << frame.size().width  << "," << frame.size().height << ") by " <<  resizeFactor << std::endl;
+              }
+              else {
+                  videoResize = VIDEO_RESIZE_NON_REQUIRED;
+              }
+          }
+          if (videoResize == VIDEO_RESIZE_REQUIRED) {
               Mat dst;
               resize(frame, dst, Size(), resizeFactor, resizeFactor, INTER_CUBIC);
               imshow(windowName, dst);

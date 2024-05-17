@@ -73,6 +73,10 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <IncludePath>includes;C:\prg\libc\boost_1_85_0;$(VC_IncludePath);$(WindowsSDK_IncludePath);</IncludePath>
     <LibraryPath>lib;$(VC_LibraryPath_x64);$(WindowsSDK_LibraryPath_x64)</LibraryPath>
+    <ExternalIncludePath>C:\prg\libc\boost\boost_1_85_0;C:\Volodymyrvd\tvinfo\tv\tvport\includes;$(ExternalIncludePath)</ExternalIncludePath>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
+    <ExternalIncludePath>C:\prg\libc\boost\boost_1_85_0;C:\Volodymyrvd\tvinfo\tv\tvport\includes;$(ExternalIncludePath)</ExternalIncludePath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
@@ -84,7 +88,11 @@
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
+      <AdditionalLibraryDirectories>C:\prg\libc\opencv\build\x64\vc16\lib;C:\prg\libc\opencv\build\x64\vc16\bin;C:\prg\libc\boost\boost_1_85_0\stage\lib</AdditionalLibraryDirectories>
     </Link>
+    <ProjectReference>
+      <LinkLibraryDependencies>true</LinkLibraryDependencies>
+    </ProjectReference>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <ClCompile>
@@ -113,9 +121,12 @@
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>C:\prg\libc\opencv\build\x64\vc16\bin;C:\prg\libc\boost_1_85_0\stage\lib</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>C:\prg\libc\opencv\build\x64\vc16\lib;C:\prg\libc\opencv\build\x64\vc16\bin;C:\prg\libc\boost\boost_1_85_0\stage\lib</AdditionalLibraryDirectories>
       <AdditionalDependencies>opencv_world490d.lib;opencv_world490.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
+    <ProjectReference>
+      <LinkLibraryDependencies>true</LinkLibraryDependencies>
+    </ProjectReference>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
@@ -136,12 +147,12 @@
   <ItemGroup>
     <ClCompile Include="http-server.cpp" />
     <ClCompile Include="main.cpp" />
-    <ClCompile Include="parameters.cpp" />
     <ClCompile Include="show-screen.cpp" />
     <ClCompile Include="slots.cpp" />
     <ClCompile Include="window-related.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="http-server.hpp" />
     <ClInclude Include="parameters.hpp" />
     <ClInclude Include="show-screen.hpp" />
     <ClInclude Include="slots.hpp" />
