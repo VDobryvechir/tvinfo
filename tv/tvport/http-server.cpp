@@ -63,7 +63,6 @@ void HttpServerInstance::run() {
   };
 
 
-  // GET-example for the path /info
   // Responds with request-information
   server.resource["^/info$"]["GET"] = [](std::shared_ptr<HttpServer::Response> response, std::shared_ptr<HttpServer::Request> request) {
     std::stringstream stream;
@@ -83,13 +82,31 @@ void HttpServerInstance::run() {
     response->write(stream);
   };
 
+  server.resource["^/status$"]["GET"] = [](std::shared_ptr<HttpServer::Response> response, std::shared_ptr<HttpServer::Request> request) {
+      std::stringstream stream;
+      stream << "UP " << request->remote_endpoint_address() << ":" << request->remote_endpoint_port();
+      response->write(stream);
+      };
+
   server.resource["^/upload/([0-9,_]+)$"]["POST"] = [](std::shared_ptr<HttpServer::Response> response, std::shared_ptr<HttpServer::Request> request) {
       std::string nr = request->path_match[1];
-      int amount = (int) request->content.gcount();
+      int offset1 = nr.find('_');
+      if (offset1 == std::string::npos) {
+          response->write("url must contain _");
+          return;
+      }
+      int offset2 = nr.find('_', offset1 + 1);
+      if (offset2 == std::string::npos) {
+          response->write("url must contain _ and _");
+          return;
+      }
+      std::string nrAmount = nr.substr(offset2 + 1);
+      int amount = std::stoi(nrAmount);
+      std::string nrUpload = nr.substr(0, offset2);
       std::unique_ptr<char[]> buffer(new char[amount]);
       char* data = buffer.get();
       request->content.read(data, static_cast<std::streamsize>(amount));
-      std::string res = tvPortSlots.uploadFile(nr, amount, data);
+      std::string res = tvPortSlots.uploadFile(nrUpload, amount, data);
       response->write(res);
   };
 
@@ -186,9 +203,27 @@ void HttpServerInstance::run() {
     // Handle errors here
     // Note that connection timeouts will also call this handle with ec set to SimpleWeb::errc::operation_canceled
   };
-
+  while (port_in_use(server.config.port)) {
+      std::cout << "To start http server, please release port " << server.config.port << ". If you cannot release the port, stop this program and change the port number in port-number.txt. " << std::endl;
+      std::this_thread::sleep_for(std::chrono::seconds(10));
+  }
+  std::cout << "Starting http server at " << server.config.port << std::endl;
     // Start server
   server.start();
+  std::cout << "Http server either could not start or was stopped" << std::endl;
+}
+
+bool HttpServerInstance::port_in_use(unsigned short port) {
+    using namespace boost::asio;
+    using ip::tcp;
+
+    io_service svc;
+    tcp::acceptor a(svc);
+
+    boost::system::error_code ec;
+    a.open(tcp::v4(), ec) || a.bind({tcp::v4(), port}, ec);
+    std::cout << "Binding at "<< port << " error code="<< ec << std::endl;
+    return ec == error::address_in_use;
 }
 
 void HttpServerInstance::httpClientTest() {

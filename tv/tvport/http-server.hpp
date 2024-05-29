@@ -5,6 +5,7 @@ class HttpServerInstance {
 public:
 	static void run();
 	static void runWithSelfTest();
+	static bool port_in_use(unsigned short port);
 };
 
 #endif

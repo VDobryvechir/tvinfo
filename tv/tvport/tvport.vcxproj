@@ -149,6 +149,7 @@
     <ClCompile Include="main.cpp" />
     <ClCompile Include="show-screen.cpp" />
     <ClCompile Include="slots.cpp" />
+    <ClCompile Include="test.cpp" />
     <ClCompile Include="window-related.cpp" />
   </ItemGroup>
   <ItemGroup>
