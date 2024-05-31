@@ -1,0 +1,6 @@
+Found pid 23392Waiting for process 00007FF604D721A0 to appear within 10 seconds
+Waiting completed PID= 23392 because it has been found process 00007FF604D721A0
+Trial 0 to clean 00007FF604D721A0
+successful cleaning by termination
+Sleeping for 7 seconds
+Successfully cleaned

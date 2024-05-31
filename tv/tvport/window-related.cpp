@@ -5,6 +5,7 @@
 #include "opencv2/highgui.hpp"
 #include "opencv2/highgui/highgui_c.h"
 #include "window-related.hpp"
+#include "window-cleaning.hpp"
 
 // Get the horizontal and vertical screen sizes in pixels
 void WindowRelatedUtils::getDesktopResolution(int& horizontal, int& vertical) {
@@ -41,4 +42,8 @@ void WindowRelatedUtils::setFullScreenMode(std::string winName)
     style &= ~WS_OVERLAPPEDWINDOW;
     style |= WS_POPUP;
     ::SetWindowLong(hParent, GWL_STYLE, style);
+}
+
+void WindowRelatedUtils::windowCleaning() {
+    WindowCleaningUtils::CleanProcessByName(L"osk.exe");
 }

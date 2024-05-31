@@ -150,6 +150,7 @@
     <ClCompile Include="show-screen.cpp" />
     <ClCompile Include="slots.cpp" />
     <ClCompile Include="test.cpp" />
+    <ClCompile Include="window-cleaning.cpp" />
     <ClCompile Include="window-related.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -157,6 +158,7 @@
     <ClInclude Include="parameters.hpp" />
     <ClInclude Include="show-screen.hpp" />
     <ClInclude Include="slots.hpp" />
+    <ClInclude Include="window-cleaning.hpp" />
     <ClInclude Include="window-related.hpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

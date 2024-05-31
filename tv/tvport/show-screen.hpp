@@ -194,6 +194,7 @@ public:
         {
             for (int i = 0; i < totalScreenNumber; i++)
             {
+                WindowRelatedUtils::windowCleaning();
                 string filePath = tvPortSlots.getCurrentSlotFileName(i);
                 int duration = tvPortSlots.getCurrentSlotDuration(i);
                 if (filePath.empty())
