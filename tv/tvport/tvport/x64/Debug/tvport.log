@@ -1,6 +1,17 @@
 ﻿  main.cpp
+C:\Volodymyrvd\tvinfo\tv\tvport\show-screen.hpp(99,86): warning C4305: 'argument': truncation from 'double' to 'float'
+  (compiling source file 'main.cpp')
+  
+C:\Volodymyrvd\tvinfo\tv\tvport\show-screen.hpp(154,94): warning C4305: 'argument': truncation from 'double' to 'float'
+  (compiling source file 'main.cpp')
+  
   show-screen.cpp
-  window-cleaning.cpp
-  window-related.cpp
+C:\Volodymyrvd\tvinfo\tv\tvport\show-screen.hpp(99,86): warning C4305: 'argument': truncation from 'double' to 'float'
+  (compiling source file 'show-screen.cpp')
+  
+C:\Volodymyrvd\tvinfo\tv\tvport\show-screen.hpp(154,94): warning C4305: 'argument': truncation from 'double' to 'float'
+  (compiling source file 'show-screen.cpp')
+  
   Generating Code...
+  LINK : C:\Volodymyrvd\tvinfo\tv\tvport\x64\Debug\tvport.exe not found or not built by the last incremental link; performing full link
   tvport.vcxproj -> C:\Volodymyrvd\tvinfo\tv\tvport\x64\Debug\tvport.exe

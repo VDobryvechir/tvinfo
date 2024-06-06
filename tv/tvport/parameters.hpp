@@ -8,6 +8,11 @@
 class ParamUtils {
     inline static const char* parameterSlotFileName = "slot.txt";
     inline static const char* parameterPortFileName = "port_number.txt";
+    inline static const char* parameterPaddingLeftFileName = "padding_left.txt";
+    inline static const char* parameterPaddingTopFileName = "padding_top.txt";
+    inline static const char* parameterPaddingRightFileName = "padding_right.txt";
+    inline static const char* parameterPaddingBottomFileName = "padding_bottom.txt";
+
 public:
 
     static int readIntegerFromBuffer(char* buffer)
@@ -89,6 +94,18 @@ public:
         return res;
     }
 
+
+    static int readWriteParameter(char* fileName, int readParameter, int defaultValue, int thresholdForWrite) 
+    {
+        int res = readParameterInteger(fileName, readParameter);
+        if (res <= thresholdForWrite)
+        {
+            res = defaultValue;
+            writeParameterInteger(fileName, res);
+        }
+        return res;
+    }
+
     static void writeParameterPortNumber(int portNumber)
     {
         writeParameterInteger((char*)parameterPortFileName, portNumber);
@@ -96,13 +113,47 @@ public:
 
     static int readParameterPortNumber()
     {
-        int res = readParameterInteger((char*)parameterPortFileName, 0);
-        if (res <= 0)
-        {
-            res = TVPORT_DEFAULT_PORT_NUMBER;
-            writeParameterPortNumber(res);
-        }
-        return res;
+        return readWriteParameter((char*)parameterPortFileName, 0, 0, TVPORT_DEFAULT_PORT_NUMBER);
+    }
+
+    static void writeParameterPaddingTop(int padding)
+    {
+        writeParameterInteger((char*)parameterPaddingTopFileName, padding);
+    }
+
+    static int readParameterPaddingTop()
+    {
+        return readWriteParameter((char*)parameterPaddingTopFileName, -1000, -1000, 0);
+    }
+
+    static void writeParameterPaddingBottom(int padding)
+    {
+        writeParameterInteger((char*)parameterPaddingBottomFileName, padding);
+    }
+
+    static int readParameterPaddingBottom()
+    {
+        return readWriteParameter((char*)parameterPaddingBottomFileName, -1000, -1000, 0);
+    }
+
+    static void writeParameterPaddingLeft(int padding)
+    {
+        writeParameterInteger((char*)parameterPaddingLeftFileName, padding);
+    }
+
+    static int readParameterPaddingLeft()
+    {
+        return readWriteParameter((char*)parameterPaddingLeftFileName, -1000, -1000, 0);
+    }
+
+    static void writeParameterPaddingRight(int padding)
+    {
+        writeParameterInteger((char*)parameterPaddingRightFileName, padding);
+    }
+
+    static int readParameterPaddingRight()
+    {
+        return readWriteParameter((char*)parameterPaddingRightFileName, -1000, -1000, 0);
     }
 
 };

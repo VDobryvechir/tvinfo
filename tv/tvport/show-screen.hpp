@@ -54,24 +54,35 @@ protected:
     WindowRelatedUtils::setFullScreenMode(windowName);
   }
 
-  float calculateScaleToResize(int width, int height) {
+  float calculateScaleToResize(int width, int height, float reducableThreshold) {
       if (height == 0 || width == 0) {
           return 0.0;
       }
       int horizontal, vertical;
       WindowRelatedUtils::getDesktopResolution(horizontal, vertical);
+      int paddingTop = ParamUtils::readParameterPaddingTop();
+      int paddingLeft = ParamUtils::readParameterPaddingLeft();
+      int paddingRight = ParamUtils::readParameterPaddingRight();
+      int paddingBottom = ParamUtils::readParameterPaddingBottom();
+      horizontal -= paddingLeft + paddingRight;
+      vertical -= paddingTop + paddingBottom;
       float riseVertical = ((float)vertical) / ((float)height);
       float riseHorizontal = ((float)horizontal) / ((float)width);
+      float riseOptimal = riseHorizontal > riseVertical ? riseHorizontal : riseVertical;
+      cout << "horizontal=" << horizontal << " vertical=" << vertical << " padding=" << paddingTop << "," << paddingRight << "," << paddingBottom << "," << paddingLeft << " riseOptimal=" << riseOptimal << " v=" << riseVertical << " h=" << riseHorizontal << std::endl;
       if (width >= horizontal) {
           if (height >= vertical) {
-              return 0.0;
+              if (reducableThreshold < 0.0 || riseOptimal + reducableThreshold>1.0) {
+                  return 0.0;
+              }
+              return riseOptimal;
           }
           return riseVertical;
       }
       if (height >= vertical) {
           return riseHorizontal;
       }
-      return riseHorizontal > riseVertical ? riseHorizontal : riseVertical;
+      return riseOptimal;
   }
 
   void taskShowPicture(string imagePath, int duration) 
@@ -85,9 +96,10 @@ protected:
         this_thread::sleep_for(200ms);
         return;
     }
-    float resizeFactor = calculateScaleToResize(img.size().width, img.size().height);
-    if (resizeFactor >= 1) {
+    float resizeFactor = calculateScaleToResize(img.size().width, img.size().height, 0.01);
+    if (resizeFactor > 0.0001) {
         Mat dst;
+        cout << "Buildestorrelsesfaktor " << resizeFactor << std::endl;
         resize(img, dst, Size(), resizeFactor, resizeFactor, INTER_CUBIC);
         imshow(windowName, dst);
     }
@@ -139,8 +151,8 @@ protected:
           }
           if (videoResize == VIDEO_RESIZE_UNKNOWN)
           {
-              resizeFactor = calculateScaleToResize(frame.size().width, frame.size().height);
-              if (resizeFactor >= 1) {
+              resizeFactor = calculateScaleToResize(frame.size().width, frame.size().height, 0.05);
+              if (resizeFactor > 0.0001) {
                   videoResize = VIDEO_RESIZE_REQUIRED;
                   std::cout << "Resizing video " << fileName << " (" << frame.size().width  << "," << frame.size().height << ") by " <<  resizeFactor << std::endl;
               }
