@@ -111,6 +111,32 @@ public:
 		return res;
 	}
 
+	std::string getAllDurations() {
+		std::string res = "";
+		int n = duration.size();
+		for (int i = 0; i < n; i++)
+		{
+			if (i != 0) {
+				res += ",";
+			}
+			res += std::to_string(duration.at(i));
+		}
+		return res;
+	}
+
+	std::string getAllFiles() {
+		std::string res = "";
+		int n = file.size();
+		for (int i = 0; i < n; i++)
+		{
+			if (i != 0) {
+				res += ",";
+			}
+			res += "\"/" + pathPrefix + file.at(i) + "\"";
+		}
+		return res;
+	}
+
 	bool filePathContainVideo(std::string name) {
 		if (name.size() == 0) {
 			return false;
@@ -400,6 +426,31 @@ public:
 		}
         return currentSlot;            
     }
+	int getCurrentSlotNumber() {
+		return currentSlot;
+	}
+
+	std::string getCurrentSlotFiles()
+	{
+		if (current == nullptr) {
+			return "";
+		}
+		return current->getAllFiles();
+	}
+
+	std::string getCurrentSlotDurations()
+	{
+		if (current == nullptr) {
+			return "";
+		}
+		return current->getAllDurations();
+	}
+
+	std::string getAllPaddings()
+	{
+		std::string r = std::to_string(ParamUtils::readParameterPaddingTop()) + "," + std::to_string(ParamUtils::readParameterPaddingRight()) + "," + std::to_string(ParamUtils::readParameterPaddingBottom()) + "," + std::to_string(ParamUtils::readParameterPaddingLeft());
+		return r;
+	}
 
     int getCurrentSlotScreens() 
     {

@@ -62,22 +62,62 @@ void HttpServerInstance::run() {
     }
   };
 
+  server.resource["^/padding$"]["POST"] = [](std::shared_ptr<HttpServer::Response> response, std::shared_ptr<HttpServer::Request> request) {
+      // Retrieve string:
+      std::string body = request->content.string();
+      int wrongValue = -1000;
+      int left = readIntValueInParams(body, "l", wrongValue);
+      int right = readIntValueInParams(body, "r", wrongValue);
+      int top = readIntValueInParams(body, "t", wrongValue);
+      int bottom = readIntValueInParams(body, "b", wrongValue);
+      std::string content = "";
+      if (left > wrongValue) {
+          ParamUtils::writeParameterPaddingLeft(left);
+      }
+      else {
+          content += "<h4>Wrong left padding</h4>";
+      }
+      if (right > wrongValue) {
+          ParamUtils::writeParameterPaddingRight(right);
+      }
+      else {
+          content += "<h4>Wrong right padding</h4>";
+      }
+      if (top > wrongValue) {
+          ParamUtils::writeParameterPaddingTop(top);
+      }
+      else {
+          content += "<h4>Wrong top padding</h4>";
+      }
+      if (bottom > wrongValue) {
+          ParamUtils::writeParameterPaddingBottom(bottom);
+      }
+      else {
+          content += "<h4>Wrong bottom padding</h4>";
+      }
+      if (content == "") {
+          content = "<script>window.location.href ='/';</script>";
+      }
+      content += "<a href='/'>Tilbake</a>";
+      *response << "HTTP/1.1 200 OK\r\nContent-Type: text/html; charset=utf-8\r\nContent-Length: " << content.length() << "\r\n\r\n"
+          << content;
+
+
+      // Alternatively, use one of the convenience functions, for instance:
+      // response->write(content);
+      };
+
 
   // Responds with request-information
   server.resource["^/info$"]["GET"] = [](std::shared_ptr<HttpServer::Response> response, std::shared_ptr<HttpServer::Request> request) {
     std::stringstream stream;
-    stream << "<h1>Request from " << request->remote_endpoint_address() << ":" << request->remote_endpoint_port() << "</h1>";
+    stream << "{\"id\":\"" << tvPortSlots.getCurrentSlotNumber() << "\",";
 
-    stream << request->method << " " << request->path << " HTTP/" << request->http_version;
+    stream << "\"padding\":[" << tvPortSlots.getAllPaddings() << "],";
 
-    stream << "<h2>Query Fields</h2>";
-    auto query_fields = request->parse_query_string();
-    for(auto &field : query_fields)
-      stream << field.first << ": " << field.second << "<br>";
+    stream << "\"files\":[" << tvPortSlots.getCurrentSlotFiles() << "],";
 
-    stream << "<h2>Header Fields</h2>";
-    for(auto &field : request->header)
-      stream << field.first << ": " << field.second << "<br>";
+    stream << "\"durations\":[" << tvPortSlots.getCurrentSlotDurations() << "]}";
 
     response->write(stream);
   };
@@ -110,23 +150,18 @@ void HttpServerInstance::run() {
       response->write(res);
   };
 
-  // GET-example simulating heavy work in a separate thread
-  server.resource["^/work$"]["GET"] = [](std::shared_ptr<HttpServer::Response> response, std::shared_ptr<HttpServer::Request> /*request*/) {
-    std::thread work_thread([response] {
-      std::this_thread::sleep_for(std::chrono::seconds(5));
-      response->write("Work done");
-    });
-    work_thread.detach();
-  };
+ 
 
-  // Default GET-example. If no other matches, this anonymous function will be called.
+  // Default GET. If no other matches, this anonymous function will be called.
   // Will respond with content in the web/-directory, and its subdirectories.
   // Default file: index.html
   // Can for instance be used to retrieve an HTML 5 client that uses REST-resources on this server
   server.default_resource["GET"] = [](std::shared_ptr<HttpServer::Response> response, std::shared_ptr<HttpServer::Request> request) {
     try {
-      auto web_root_path = boost::filesystem::canonical("0");
-      auto path = boost::filesystem::canonical(web_root_path / request->path);
+        std::string filePath = request->path;
+        auto web_root_path = boost::filesystem::canonical(detectWebFolderName(filePath));
+        filePath = getWebRestPath(filePath);
+        auto path = boost::filesystem::canonical(web_root_path / filePath);
       // Check if path is within web_root_path
       if(std::distance(web_root_path.begin(), web_root_path.end()) > std::distance(path.begin(), path.end()) ||
          !std::equal(web_root_path.begin(), web_root_path.end(), path.begin()))
@@ -165,7 +200,8 @@ void HttpServerInstance::run() {
       if(*ifs) {
         auto length = ifs->tellg();
         ifs->seekg(0, std::ios::beg);
-
+        std::string contentType = detectContentType(path.string());
+        header.emplace("Content-Type", contentType);
         header.emplace("Content-Length", to_string(length));
         response->write(header);
 
@@ -253,3 +289,114 @@ void HttpServerInstance::runWithSelfTest() {
     server_thread.join(); 
 }
 
+char asciitolower(char in) {
+    if (in <= 'Z' && in >= 'A')
+        return in - ('Z' - 'z');
+    return in;
+}
+
+std::string HttpServerInstance::detectContentType(std::string url) {
+    int pos = url.find_last_of('.');
+    if (pos!=std::string::npos) 
+    {
+        url = url.substr(pos + 1);
+        std::transform(url.begin(), url.end(), url.begin(), asciitolower);
+        if (url == "png") {
+            return "image/png";
+        }
+        if (url == "js") {
+            return "text/javascript; charset=utf-8";
+        }
+        if (url=="mp4") {
+            return "video/mp4";
+        }
+        if (url == "jpg") {
+            return "image/jpeg";
+        }
+        if (url == "jpeg") {
+            return "image/jpeg";
+        }
+        if (url == "gif") {
+            return "image/gif";
+        }
+        if (url == "pdf") {
+            return "application/pdf";
+        }
+        if (url == "ogv") {
+            return "video/ogg";
+        }
+        if (url == "avi") {
+            return "video/x-msvideo";
+        }
+        if (url == "svg") {
+            return "image/svg+xml; charset=utf-8";
+        }
+        if (url == "webm") {
+            return "video/webm";
+        }
+        if (url == "ico") {
+            return "image/x-icon";
+        }
+    }
+    return "text/html; charset=utf-8";
+}
+
+std::string HttpServerInstance::detectWebFolderName(std::string url)
+{
+    if (url.size() > 2)
+    {
+        int pos = 0;
+        if (url.at(0) == '/')
+        {
+            pos++;
+        }
+        if (url.at(pos + 1) == '/')
+        {
+            char c = url.at(pos);
+            if (c=='1') 
+            {
+                return "1";
+            }
+            if (c == '2')
+            {
+                return "2";
+            }
+        }
+    }
+    return "0";
+}
+
+std::string HttpServerInstance::getWebRestPath(std::string url)
+{
+    if (url.size() > 2)
+    {
+        int pos = 0;
+        if (url.at(0) == '/')
+        {
+            pos++;
+        }
+        if (url.at(pos + 1) == '/')
+        {
+            char c = url.at(pos);
+            if (c == '1' || c=='2' || c=='0')
+            {
+                return url.substr(pos+2);
+            }
+        }
+    }
+    return url;
+}
+
+int HttpServerInstance::readIntValueInParams(std::string body, std::string param, int defValue)
+{
+    int pos = body.find(param + "=");
+    if (pos != std::string::npos)
+    {
+        int startPos = pos + param.size() + 1;
+        int endPos = body.find("&", startPos);
+        std::string val = endPos == std::string::npos ? body.substr(startPos) : body.substr(startPos, endPos - startPos);
+        int num = ParamUtils::readIntegerFromBuffer((char*)val.c_str());
+        return num;
+    }
+    return defValue;
+}

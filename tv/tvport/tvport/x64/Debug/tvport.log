@@ -1,17 +1,18 @@
-﻿  main.cpp
-C:\Volodymyrvd\tvinfo\tv\tvport\show-screen.hpp(99,86): warning C4305: 'argument': truncation from 'double' to 'float'
-  (compiling source file 'main.cpp')
+﻿  http-server.cpp
+  Please define _WIN32_WINNT or _WIN32_WINDOWS appropriately. For example:
+  - add -D_WIN32_WINNT=0x0601 to the compiler command line; or
+  - add _WIN32_WINNT=0x0601 to your project's Preprocessor Definitions.
+  Assuming _WIN32_WINNT=0x0601 (i.e. Windows 7 target).
+C:\Volodymyrvd\tvinfo\tv\tvport\slots.hpp(116,9): warning C4267: 'initializing': conversion from 'size_t' to 'int', possible loss of data
+  (compiling source file 'http-server.cpp')
   
-C:\Volodymyrvd\tvinfo\tv\tvport\show-screen.hpp(154,94): warning C4305: 'argument': truncation from 'double' to 'float'
-  (compiling source file 'main.cpp')
+C:\Volodymyrvd\tvinfo\tv\tvport\slots.hpp(129,9): warning C4267: 'initializing': conversion from 'size_t' to 'int', possible loss of data
+  (compiling source file 'http-server.cpp')
   
-  show-screen.cpp
-C:\Volodymyrvd\tvinfo\tv\tvport\show-screen.hpp(99,86): warning C4305: 'argument': truncation from 'double' to 'float'
-  (compiling source file 'show-screen.cpp')
-  
-C:\Volodymyrvd\tvinfo\tv\tvport\show-screen.hpp(154,94): warning C4305: 'argument': truncation from 'double' to 'float'
-  (compiling source file 'show-screen.cpp')
-  
-  Generating Code...
-  LINK : C:\Volodymyrvd\tvinfo\tv\tvport\x64\Debug\tvport.exe not found or not built by the last incremental link; performing full link
+C:\Volodymyrvd\tvinfo\tv\tvport\http-server.cpp(133,19): warning C4267: 'initializing': conversion from 'size_t' to 'int', possible loss of data
+C:\Volodymyrvd\tvinfo\tv\tvport\http-server.cpp(138,19): warning C4267: 'initializing': conversion from 'size_t' to 'int', possible loss of data
+C:\Volodymyrvd\tvinfo\tv\tvport\http-server.cpp(299,13): warning C4267: 'initializing': conversion from 'size_t' to 'int', possible loss of data
+C:\Volodymyrvd\tvinfo\tv\tvport\http-server.cpp(392,13): warning C4267: 'initializing': conversion from 'size_t' to 'int', possible loss of data
+C:\Volodymyrvd\tvinfo\tv\tvport\http-server.cpp(395,22): warning C4267: 'initializing': conversion from 'size_t' to 'int', possible loss of data
+C:\Volodymyrvd\tvinfo\tv\tvport\http-server.cpp(396,20): warning C4267: 'initializing': conversion from 'size_t' to 'int', possible loss of data
   tvport.vcxproj -> C:\Volodymyrvd\tvinfo\tv\tvport\x64\Debug\tvport.exe

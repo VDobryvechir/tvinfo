@@ -1,0 +1,192 @@
+<html>
+<head>
+  <style>
+     body {
+         padding: 10px;
+     }
+     #pict {
+         display: flex;
+         flex-direction: row;
+         flex-wrap: wrap;
+         padding: 10px;
+         background-color: #ccc;
+         border: 1px solid #eee;
+         border-radius: 7px;
+     }
+     .picture, .video {
+         width: 320px;
+         padding: 0;
+         margin: 10px;
+         height: 240px;
+         overflow: hidden;
+         border: 1px solid #eee;
+         border-radius: 3px;
+     }
+    .duration {
+        height: 30px;
+        background-color: #0033ff;
+        color: #ffffff;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    .picture-image {
+        width: 320px;
+        height: 210px;
+        overflow: hidden; 
+    }
+   #padform {
+        margin: 20px 0px;
+        background-color: olive;
+        color: white;
+        padding: 15px;
+        border: 1px solid #eee;
+        border-radius: 7px;
+   }
+  </style>
+</head>
+<body>
+<h3>TV-konfigurasjon <span id="conf_nr"></span></h3>
+<div id="pict">
+
+</div>
+<div id="padform" style="display:none">
+  <h4>Innstilling av parametere</h4>
+  <form action="/padding" method="POST">
+     <table>
+         <tr>
+            <td>
+               Polstring til venstre
+            </td>
+            <td>
+               <input type="text" name="l" id="left" value="0" /> 
+            </td>
+         </tr>
+         <tr>
+            <td>
+               Polstring på toppen
+            </td>
+            <td>
+               <input type="text" name="t" id="top" value="0" /> 
+            </td>
+         </tr>
+         <tr>
+            <td>
+               Polstring til høyre
+            </td>
+            <td>
+               <input type="text" name="r" id="right" value="0" /> 
+            </td>
+         </tr>
+         <tr>
+            <td>
+               Polstring i bunnen
+            </td>
+            <td>
+               <input type="text" name="b" id="bottom" value="0" /> 
+            </td>
+         </tr>
+         <tr>
+            <td> &nbsp;
+            </td>
+            <td>
+               <button type="submit">Send inn</button> 
+            </td>
+         </tr>
+     </table>
+  </form>
+</div>
+<script>
+function isVideo(name) {
+   if (!name) {
+        return false;
+   }
+   var pos = name.lastIndexOf(".");
+   if (pos<=0) {
+        return false;
+   }
+   var ext = name.substr(pos+1).toLowerCase();
+   return ext==="mp4" || ext==="webm" || ext==="ogv" || ext==="avi";
+}
+
+function showError(mes) {
+   var pool = document.getElementById("pict");
+   pool.innerHTML = "HTTP error " + (mes? mes : "");
+}
+
+function showPad(val,id) {
+   document.getElementById(id).value = "" + val;
+}
+function getDurationString(duration) {
+   if (duration<=0) {
+      return "00:00";
+   }
+   var sec = duration % 60;
+   var min = (duration - sec) / 60;
+   return (min<10 ? "0" : "") + min + ":" + (sec<10? "0" : "") + sec;
+}
+function createPicture(name, duration) {
+	var blk = document.createElement("div");
+        blk.className = "picture";
+        var top = document.createElement("div");
+        top.className = "duration";
+        top.innerHTML = getDurationString(duration);
+        blk.appendChild(top);
+        var bottom=document.createElement("div");
+        bottom.className = "picture-image";
+        bottom.innerHTML = "<img src='"+name+"' width='320' />";
+        blk.appendChild(bottom); 
+        return blk;    
+}
+
+function createVideo(name) {
+	var blk = document.createElement("div");
+        blk.className = "video";
+        blk.innerHTML = "<video width='320' height='240' controls=''><source src='"+name+"'></video>";
+        return blk;    
+}
+
+function presentData(data) {
+	if (!data || !data.files) {
+             showError();
+             return;
+        }
+        document.getElementById("conf_nr").innerHTML="# "+data.id;
+        var pool = document.getElementById("pict");
+        var files = data.files;
+        var durations = data.durations || [];
+        var n = files.length;
+        for(var i=0;i<n;i++) {
+           var p = isVideo(files[i]) ? createVideo(files[i]) : createPicture(files[i], durations[i] || 0);
+           pool.appendChild(p);
+        }   
+        var padding=data.padding || [];
+        if (padding.length==4) {
+             document.getElementById("padform").style.display = "block";
+             showPad(padding[0],"top");
+             showPad(padding[1],"right");
+             showPad(padding[2],"bottom");
+             showPad(padding[3],"left");
+        }
+}
+var xhr = new XMLHttpRequest();
+
+xhr.open("GET", "/info");
+
+xhr.onreadystatechange = function() {
+  if (this.readyState == 4 && this.status == 200) {
+    var data = JSON.parse(this.responseText);
+    presentData(data);
+  }
+};
+
+xhr.onerror = function() {
+  console.log("error fetching");
+  showError();
+};
+
+xhr.send();
+
+</script>
+</body>
+</html>
